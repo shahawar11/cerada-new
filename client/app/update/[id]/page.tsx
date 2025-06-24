@@ -1,7 +1,8 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { AlertCircle, CheckCircle2, Upload, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, Upload, X, ArrowLeft } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Select,
@@ -25,6 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import axios from "axios";
+
+import Link from "next/link";
 
 // Country codes with flags
 const countryCodes = [
@@ -72,12 +75,22 @@ interface FormData {
   message?: string;
 }
 
-export default function ConferenceSubmissionForm() {
+export default function UpdateSubmissionForm() {
+  const params = useParams();
+  const router = useRouter();
+  const id = params.id as string;
+
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [submitStatus, setSubmitStatus] = useState<
     "idle" | "success" | "error"
   >("idle");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [existingFile, setExistingFile] = useState<{
+    fileName: string;
+    filePath: string;
+    fileSize: number;
+  } | null>(null);
 
   const [formData, setFormData] = useState<FormData>({
     submissionType: "",
@@ -104,6 +117,67 @@ export default function ConferenceSubmissionForm() {
   const [errors, setErrors] = useState<Partial<FormData & { file: string }>>(
     {}
   );
+
+  // Fetch existing submission data
+  useEffect(() => {
+    const fetchSubmission = async () => {
+      try {
+        const response = await axios.get(
+          `https://cerada-new.onrender.com/api/submission/${id}`
+        );
+        const data = response.data;
+
+        // Extract country code from mobile number
+        const mobileNumber = data.mobileNumber || "";
+        let countryCode = "";
+        let phoneNumber = mobileNumber;
+
+        // Try to extract country code
+        const countryCodeMatch = countryCodes.find((cc) =>
+          mobileNumber.startsWith(cc.code)
+        );
+        if (countryCodeMatch) {
+          countryCode = countryCodeMatch.code;
+          phoneNumber = mobileNumber.substring(countryCode.length);
+        }
+
+        setFormData({
+          submissionType: data.submissionType || "",
+          paperTitle: data.paperTitle || "",
+          authorName: data.authorName || "",
+          coAuthorNames: data.coAuthorNames || "",
+          presenter: data.presenter || "",
+          correspondingAuthorEmail: data.correspondingAuthorEmail || "",
+          countryCode: countryCode,
+          mobileNumber: phoneNumber,
+          whatsappViber: data.whatsappViber || "",
+          linkedinUrl: data.linkedinUrl || "",
+          facebookUrl: data.facebookUrl || "",
+          presentationCategory: data.presentationCategory || "",
+          presentationType: data.presentationType || "",
+          institutionName: data.institutionName || "",
+          department: data.department || "",
+          designation: data.designation || "",
+          publicationRequired: data.publicationRequired || "",
+          howDidYouKnow: data.howDidYouKnow || "",
+          message: data.message || "",
+        });
+
+        if (data.uploadedFile) {
+          setExistingFile(data.uploadedFile);
+        }
+      } catch (error) {
+        console.error("Error fetching submission:", error);
+        
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchSubmission();
+    }
+  }, [id]);
 
   const handleInputChange = (name: keyof FormData, value: string) => {
     setFormData((prev) => ({
@@ -154,6 +228,10 @@ export default function ConferenceSubmissionForm() {
   const removeFile = () => {
     setSelectedFile(null);
     setErrors((prev) => ({ ...prev, file: "" }));
+  };
+
+  const removeExistingFile = () => {
+    setExistingFile(null);
   };
 
   const validateForm = (): boolean => {
@@ -245,8 +323,13 @@ export default function ConferenceSubmissionForm() {
         submitData.append("file", selectedFile);
       }
 
-      await axios.post(
-        "https://cerada-new.onrender.com/api/submission",
+      // If existing file was removed, indicate that
+      if (!existingFile && !selectedFile) {
+        submitData.append("removeFile", "true");
+      }
+
+      await axios.put(
+        `https://cerada-new.onrender.com/api/update/submission/${id}`,
         submitData,
         {
           headers: {
@@ -255,34 +338,15 @@ export default function ConferenceSubmissionForm() {
         }
       );
 
-      console.log("Details submitted successfully");
+      console.log("Submission updated successfully");
       setSubmitStatus("success");
       
 
-      // Reset form
-      setFormData({
-        submissionType: "",
-        paperTitle: "",
-        authorName: "",
-        coAuthorNames: "",
-        presenter: "",
-        correspondingAuthorEmail: "",
-        countryCode: "",
-        mobileNumber: "",
-        whatsappViber: "",
-        linkedinUrl: "",
-        facebookUrl: "",
-        presentationCategory: "",
-        presentationType: "",
-        institutionName: "",
-        department: "",
-        designation: "",
-        publicationRequired: "",
-        howDidYouKnow: "",
-        message: "",
-      });
-      setSelectedFile(null);
-    } catch (error) {
+      // Redirect to CRUD page after successful update
+      setTimeout(() => {
+        router.push("/crud");
+      }, 2000);
+    } catch (error: unknown) {
       console.log(error);
       setSubmitStatus("error");
       
@@ -291,16 +355,36 @@ export default function ConferenceSubmissionForm() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8 px-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading submission data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
+        <div className="mb-6">
+          <Button variant="outline" asChild>
+            <Link href="/crud">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Submissions
+            </Link>
+          </Button>
+        </div>
+
         <Card>
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-bold text-gray-900">
-              Conference Paper Submission
+              Update Conference Paper Submission
             </CardTitle>
             <CardDescription className="text-lg text-gray-600">
-              Submit your abstract or full paper for the upcoming conference
+              Update your abstract or full paper submission details
             </CardDescription>
           </CardHeader>
 
@@ -309,8 +393,8 @@ export default function ConferenceSubmissionForm() {
               <Alert className="mb-6 border-green-200 bg-green-50">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                 <AlertDescription className="text-green-800">
-                  Your submission has been successfully submitted! We&apos;ll
-                  review it and get back to you soon.
+                  Your submission has been successfully updated! Redirecting to
+                  submissions list...
                 </AlertDescription>
               </Alert>
             )}
@@ -319,7 +403,7 @@ export default function ConferenceSubmissionForm() {
               <Alert className="mb-6 border-red-200 bg-red-50">
                 <AlertCircle className="h-4 w-4 text-red-600" />
                 <AlertDescription className="text-red-800">
-                  There was an error submitting your form. Please try again.
+                  There was an error updating your submission. Please try again.
                 </AlertDescription>
               </Alert>
             )}
@@ -796,6 +880,35 @@ export default function ConferenceSubmissionForm() {
                         should be less than 3MB.
                       </p>
 
+                      {/* Show existing file if available */}
+                      {existingFile && (
+                        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Upload className="h-4 w-4 text-blue-500" />
+                              <span className="text-sm font-medium text-blue-700">
+                                Current file: {existingFile.fileName}
+                              </span>
+                              <span className="text-xs text-blue-600">
+                                (
+                                {(existingFile.fileSize / 1024 / 1024).toFixed(
+                                  2
+                                )}{" "}
+                                MB)
+                              </span>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={removeExistingFile}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                         {selectedFile ? (
                           <div className="flex items-center justify-between bg-gray-50 p-3 rounded">
@@ -896,7 +1009,7 @@ export default function ConferenceSubmissionForm() {
                     disabled={isSubmitting}
                     className="w-full md:w-auto px-8 py-3 text-lg font-semibold"
                   >
-                    {isSubmitting ? "Submitting..." : "Submit Paper"}
+                    {isSubmitting ? "Updating..." : "Update Submission"}
                   </Button>
                 </div>
               </div>
