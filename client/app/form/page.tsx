@@ -217,7 +217,6 @@ export default function ConferenceSubmissionForm() {
     e.preventDefault();
 
     if (!validateForm()) {
-      
       return;
     }
 
@@ -240,9 +239,9 @@ export default function ConferenceSubmissionForm() {
       // Use the combined mobile number
       submitData.append("mobileNumber", fullMobileNumber);
 
-      // Append file if selected
+      // FIXED: Append file with correct field name "paper" to match backend
       if (selectedFile) {
-        submitData.append("file", selectedFile);
+        submitData.append("paper", selectedFile);
       }
 
       await axios.post(
@@ -257,7 +256,6 @@ export default function ConferenceSubmissionForm() {
 
       console.log("Details submitted successfully");
       setSubmitStatus("success");
-      
 
       // Reset form
       setFormData({
@@ -285,7 +283,6 @@ export default function ConferenceSubmissionForm() {
     } catch (error) {
       console.log(error);
       setSubmitStatus("error");
-      
     } finally {
       setIsSubmitting(false);
     }
