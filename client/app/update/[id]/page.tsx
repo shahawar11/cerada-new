@@ -26,7 +26,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import axios from "axios";
-
 import Link from "next/link";
 
 // Country codes with flags
@@ -168,7 +167,6 @@ export default function UpdateSubmissionForm() {
         }
       } catch (error) {
         console.error("Error fetching submission:", error);
-        
       } finally {
         setIsLoading(false);
       }
@@ -295,7 +293,6 @@ export default function UpdateSubmissionForm() {
     e.preventDefault();
 
     if (!validateForm()) {
-      
       return;
     }
 
@@ -308,19 +305,19 @@ export default function UpdateSubmissionForm() {
       // Combine country code and mobile number
       const fullMobileNumber = `${formData.countryCode}${formData.mobileNumber}`;
 
-      // Append all form data
+      // Append all form data EXCEPT countryCode and mobileNumber
       Object.entries(formData).forEach(([key, value]) => {
-        if (key !== "countryCode" && value) {
+        if (key !== "countryCode" && key !== "mobileNumber" && value) {
           submitData.append(key, value);
         }
       });
 
-      // Use the combined mobile number
+      // Append the combined mobile number as a single field
       submitData.append("mobileNumber", fullMobileNumber);
 
-      // Append file if selected
+      // Append file if selected (using "paper" to match backend)
       if (selectedFile) {
-        submitData.append("file", selectedFile);
+        submitData.append("paper", selectedFile);
       }
 
       // If existing file was removed, indicate that
@@ -340,7 +337,6 @@ export default function UpdateSubmissionForm() {
 
       console.log("Submission updated successfully");
       setSubmitStatus("success");
-      
 
       // Redirect to CRUD page after successful update
       setTimeout(() => {
@@ -349,7 +345,6 @@ export default function UpdateSubmissionForm() {
     } catch (error: unknown) {
       console.log(error);
       setSubmitStatus("error");
-      
     } finally {
       setIsSubmitting(false);
     }
