@@ -229,17 +229,17 @@ export default function ConferenceSubmissionForm() {
       // Combine country code and mobile number
       const fullMobileNumber = `${formData.countryCode}${formData.mobileNumber}`;
 
-      // Append all form data
+      // Append all form data EXCEPT countryCode and mobileNumber
       Object.entries(formData).forEach(([key, value]) => {
-        if (key !== "countryCode" && value) {
+        if (key !== "countryCode" && key !== "mobileNumber" && value) {
           submitData.append(key, value);
         }
       });
 
-      // Use the combined mobile number
+      // Append the combined mobile number as a single field
       submitData.append("mobileNumber", fullMobileNumber);
 
-      // FIXED: Append file with correct field name "paper" to match backend
+      // Append file with correct field name "paper" to match backend
       if (selectedFile) {
         submitData.append("paper", selectedFile);
       }
