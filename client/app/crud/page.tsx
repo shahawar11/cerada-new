@@ -43,7 +43,7 @@ const CrudPage = () => {
     const fetchData = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:8000/api/submissions"
+          "https://cerada-new.onrender.com/api/submissions"
         );
         console.log("Fetched data:", response.data); // ✅ Debug log
         setSubmissions(response.data);

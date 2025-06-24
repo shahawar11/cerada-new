@@ -151,7 +151,7 @@ export default function ConferenceSubmissionForm() {
     setSubmitStatus("idle");
 
     await axios
-      .post("http://localhost:8000/api/submission", formData)
+      .post("https://cerada-new.onrender.com/api/submission", formData)
       .then(() => {
         console.log("Details submitted successfully");
         setSubmitStatus("success");
