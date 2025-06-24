@@ -204,7 +204,7 @@ export default function ConferenceSubmissionForm() {
               <Alert className="mb-6 border-green-200 bg-green-50">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                 <AlertDescription className="text-green-800">
-                  Your submission has been successfully submitted! We'll review
+                  Your submission has been successfully submitted! We&apos;ll review
                   it and get back to you soon.
                 </AlertDescription>
               </Alert>
